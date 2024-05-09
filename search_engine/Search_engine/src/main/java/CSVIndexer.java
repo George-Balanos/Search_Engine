@@ -1,3 +1,6 @@
+//Evangelos Chasanis 5058
+//Georgios Mpalanos 5054
+
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import org.apache.lucene.analysis.Analyzer;
@@ -7,9 +10,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.spell.PlainTextDictionary;
+import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -24,6 +30,14 @@ public class CSVIndexer {
             Analyzer analyzer = new StandardAnalyzer();
 
             Directory dir = FSDirectory.open(Path.of("./tmp/testIndex"));
+
+            Directory spellIndexDirectory = FSDirectory.open(Path.of("./spellCheckerIndex"));
+
+            SpellChecker spellChecker = new SpellChecker(spellIndexDirectory);
+
+            // Index the dictionary
+            spellChecker.indexDictionary(new PlainTextDictionary(new File("./words.txt").toPath()), new IndexWriterConfig(), false);
+
 
             IndexWriterConfig config = new IndexWriterConfig(analyzer);
 
@@ -51,11 +65,13 @@ public class CSVIndexer {
 
             Document doc = new Document();
 
+            Field author = new TextField("author",row[1],Field.Store.YES);
             Field yearField = new TextField("year",row[2],Field.Store.YES);
             Field titleField = new TextField("title",row[3],Field.Store.YES);
             Field abstractField = new TextField("abstract",row[4],Field.Store.YES);
             Field full_text = new TextField("full_text",row[5],Field.Store.YES);
 
+            doc.add(author);
             doc.add(titleField);
             doc.add(yearField);
             doc.add(abstractField);
@@ -83,19 +99,13 @@ public class CSVIndexer {
                 String[] tempArray = new String[6];
 
                 for (int j = 0; j < row.length; j++) {
-                    //System.out.println("[" + columnNames[j] + ": " + row[j] + "]");
+
                     String tempString = row[j];
                     tempArray[j] = tempString;
                 }
 
                 myList.add(tempArray);
             }
-
-            /*for(String[] elem: myList){
-                for(String elem1: elem){
-                    System.out.print(elem1+"  ");
-                }
-            }*/
 
         } catch (IOException | CsvException e) {
             e.printStackTrace();
